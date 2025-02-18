@@ -8,9 +8,20 @@ project(waterdynamic_simulator)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  gazebo_dev
   roscpp
   rospy
+  std_msgs
 )
+
+# sdfformat9 uses C++17 features. 
+if(NOT (GAZEBO_MAJOR_VERSION LESS 11))
+    # Specify C++17 standard
+    add_definitions(-std=c++17)
+else()
+    # Specify C++11 standard
+    add_definitions(-std=c++11)
+endif()
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -117,12 +128,14 @@ catkin_package(
 include_directories(
 # include
   ${catkin_INCLUDE_DIRS}
+  ${PROJECT_SOURCE_DIR}/include
+  ${GAZEBO_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
-# add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/waterdynamic_simulator.cpp
-# )
+add_library(${PROJECT_NAME}
+  src/WaterDynamic.cc
+)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
