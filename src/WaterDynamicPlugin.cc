@@ -49,7 +49,7 @@ void WaterDynamicPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
     this->flowSubscriber_ = this->node_->Subscribe(flowTopic,
       &WaterDynamicPlugin::UpdateFlowVelocity, this);
     }
-
+2
     // read sdf parameters
     double fluid_density = 1000.0;
     if (_sdf->HasElement("fluid_density"))
