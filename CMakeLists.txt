@@ -14,14 +14,12 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
 )
 
+find_package(Eigen3 REQUIRED)
+
 # sdfformat9 uses C++17 features. 
-if(NOT (GAZEBO_MAJOR_VERSION LESS 11))
-    # Specify C++17 standard
-    add_definitions(-std=c++17)
-else()
-    # Specify C++11 standard
-    add_definitions(-std=c++11)
-endif()
+
+add_definitions(-std=c++17)
+
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -130,11 +128,18 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
   ${PROJECT_SOURCE_DIR}/include
   ${GAZEBO_INCLUDE_DIRS}
+  ${EIGEN3_INCLUDE_DIR}
+)
+
+link_directories(
+  ${catkin_LIBRARY_DIRS}
+  ${EIGEN3_LIBRARY_DIRS}
 )
 
 ## Declare a C++ library
 add_library(${PROJECT_NAME}
   src/WaterDynamic.cc
+  src/WaterDynamicPlugin.cc
 )
 
 ## Add cmake target dependencies of the library
@@ -184,18 +189,23 @@ add_library(${PROJECT_NAME}
 
 ## Mark libraries for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_libraries.html
-# install(TARGETS ${PROJECT_NAME}
-#   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
-# )
+install(TARGETS ${PROJECT_NAME}
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+)
 
 ## Mark cpp header files for installation
-# install(DIRECTORY include/${PROJECT_NAME}/
-#   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-#   FILES_MATCHING PATTERN "*.h"
-#   PATTERN ".svn" EXCLUDE
-# )
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  FILES_MATCHING PATTERN "*.hh"
+  PATTERN "*~" EXCLUDE
+)
+
+install(DIRECTORY include/
+   DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}
+   FILES_MATCHING PATTERN ".hh"
+)
 
 ## Mark other files for installation (e.g. launch and bag files, etc.)
 # install(FILES

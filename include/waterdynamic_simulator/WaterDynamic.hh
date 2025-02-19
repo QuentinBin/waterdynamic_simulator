@@ -3,7 +3,7 @@
  * @Author: Bin Peng
  * @Email: pb20020816@163.com
  * @Date: 2025-02-14 12:16:22
- * @LastEditTime: 2025-02-18 14:16:58
+ * @LastEditTime: 2025-02-19 16:08:51
  */
 #ifndef WDSIM_WATERDYNAMIC_HH_
 #define WDSIM_WATERDYNAMIC_HH
@@ -12,6 +12,8 @@
 #include <gazebo/physics/PhysicsTypes.hh>
 #include <gazebo/physics/Link.hh>
 #include <gazebo/physics/Collision.hh>
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 
 namespace gazebo
 {
@@ -20,7 +22,10 @@ class UnderWaterObject_c
 {
     public: UnderWaterObject_c(sdf::ElementPtr _sdf, physics::LinkPtr _link);
     public: ~UnderWaterObject_c();
+
+    
     ///////////Hydrodynamic Functions////////////
+    public: void ApplyHydroDynamics(ignition::math::Vector3d &_flow_linear_vel);
     // Get the buoyancy force in World Frame
     public: void GetBuoyancyForce(
         ignition::math::Vector3d &_boyancy_force,
@@ -28,21 +33,23 @@ class UnderWaterObject_c
     );
     // Apply the buoyancy force on link
     public: void ApplyBuoyancyForce();
-    // Get the lift and drag force in World Frame
+    // Get the lift and drag force in Body Frame
     public: void GetLiftDragForce(
         const ignition::math::Vector3d &_flow_linear_vel,
-        const double _coef_lift,
-        const double _coef_drag_x,
-        const double _coef_drag_y,
-        const double _coef_drag_z,
         ignition::math::Vector3d &_lift_force,
-        ignition::math::Vector3d &_drag_force,
-        ignition::math::Vector3d &_lift_torque,
-        ignition::math::Vector3d &_drag_torque
+        ignition::math::Vector3d &_drag_force
     );
     // Apply the lift and drag force on link
-    public: void ApplyLiftDragForce();
+    public: void ApplyLiftDragForce(ignition::math::Vector3d &_flow_linear_vel);
+    // Get the reaction force in Body Frame
+    public: void GetReactionForce(ignition::math::Vector3d &_reaction_force);
+    // Apply the reaction force on link
+    public: void ApplyReactionForce();
+    ////////////Hydrodynamic Functions////////////
+    
 
+    // // Get the acceleration of the object
+    // public: void ComputeAcceleration(Eigen::Matrix<double, 6, 1> _velocity_rel, double _time);
     
     // Set the volume of the object
     public: void SetVolume(double _volume = -1);
@@ -60,14 +67,51 @@ class UnderWaterObject_c
     public: void SetCenterOfBuoyancy(ignition::math::Vector3d &_center_of_buoyancy);
     // Get the Center of Buoyancy
     public: ignition::math::Vector3d GetCenterOfBuoyancy();
+    // Set the Coefficients of Lift and Drag
+    public: void SetLiftDragCoef(
+        double _coef_lift_xoy,
+        double _coef_lift_xoz,
+        double _coef_drag_xoy,
+        double _coef_drag_xoz
+    );
+    // Get the Coefficients of Lift and Drag
+    public: void GetLiftDragCoef(
+        double &_coef_lift_xoy,
+        double &_coef_lift_xoz,
+        double &_coef_drag_xoy,
+        double &_coef_drag_xoz
+    );
+    // Set the Coefficients of Added Mass
+    public: void SetAddedMassCoef(
+        double _coef_added_mass_x,
+        double _coef_added_mass_y,
+        double _coef_added_mass_z
+    );
+    // Get the Coefficients of Added Mass
+    public: void GetAddedMassCoef(
+        double &_coef_added_mass_x,
+        double &_coef_added_mass_y,
+        double &_coef_added_mass_z
+    );
+
+    public: void PrintParameters(std::string _paramName);
 
     protected: double volume_;
     protected: double fluid_density_;
     protected: double g_;
+    protected: double coef_lift_xoy_;
+    protected: double coef_lift_xoz_;
+    protected: double coef_drag_xoy_;
+    protected: double coef_drag_xoz_;
+    protected: double coef_added_mass_x;
+    protected: double coef_added_mass_y;
+    protected: double coef_added_mass_z;
     protected: ignition::math::Vector3d center_of_buoyancy_;
-
     protected: physics::LinkPtr link_;
-
+    // protected: double last_time_;
+    // protected: Eigen::Matrix<double, 6, 1> velocity_;
+    // protected: Eigen::Matrix<double, 6, 1> last_velocity_rel_;
+    // protected: Eigen::Matrix<double, 6, 1> acceleration_rel_;
 };
 
 }

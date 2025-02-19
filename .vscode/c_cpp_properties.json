@@ -1,28 +1,28 @@
 {
-  "configurations": [
-    {
-      "browse": {
-        "databaseFilename": "${default}",
-        "limitSymbolsToIncludedHeaders": false
-      },
-      "includePath": [
-        "/home/pengbin/UUV_ws/devel/include/**",
-        "/opt/ros/noetic/include/**",
-        "/home/pengbin/UUV_ws/src/robodact_simulation/include/**",
-        "/home/pengbin/UUV_ws/src/uuv_simulator/uuv_gazebo_plugins/uuv_gazebo_plugins/include/**",
-        "/home/pengbin/UUV_ws/src/uuv_simulator/uuv_gazebo_plugins/uuv_gazebo_ros_plugins/include/**",
-        "/home/pengbin/UUV_ws/src/uuv_simulator/uuv_sensor_plugins/uuv_sensor_ros_plugins/include/**",
-        "/home/pengbin/UUV_ws/src/uuv_simulator/uuv_world_plugins/uuv_world_plugins/include/**",
-        "/home/pengbin/UUV_ws/src/uuv_simulator/uuv_world_plugins/uuv_world_ros_plugins/include/**",
-        "/home/pengbin/UUV_ws/src/waterdynamic_simulator/include/**",
-        "/usr/include/**"
-      ],
-      "name": "ROS",
-      "intelliSenseMode": "gcc-x64",
-      "compilerPath": "/usr/bin/gcc",
-      "cStandard": "gnu11",
-      "cppStandard": "c++17"
-    }
-  ],
-  "version": 4
+    "configurations": [
+        {
+            "browse": {
+                "databaseFilename": "${default}",
+                "limitSymbolsToIncludedHeaders": false
+            },
+            "includePath": [
+                "/opt/ros/noetic/include/**",
+                "/home/pengbin/UUV_ws/devel/include/**",
+                "/home/pengbin/UUV_ws/src/robodact_simulation/include/**",
+                "/home/pengbin/UUV_ws/src/uuv_simulator/uuv_gazebo_plugins/uuv_gazebo_plugins/include/**",
+                "/home/pengbin/UUV_ws/src/uuv_simulator/uuv_gazebo_plugins/uuv_gazebo_ros_plugins/include/**",
+                "/home/pengbin/UUV_ws/src/uuv_simulator/uuv_sensor_plugins/uuv_sensor_ros_plugins/include/**",
+                "/home/pengbin/UUV_ws/src/uuv_simulator/uuv_world_plugins/uuv_world_plugins/include/**",
+                "/home/pengbin/UUV_ws/src/uuv_simulator/uuv_world_plugins/uuv_world_ros_plugins/include/**",
+                "/home/pengbin/UUV_ws/src/waterdynamic_simulator/include/**",
+                "/usr/include/**"
+            ],
+            "name": "ROS",
+            "intelliSenseMode": "gcc-x64",
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "gnu11",
+            "cppStandard": "c++17"
+        }
+    ],
+    "version": 4
 }
