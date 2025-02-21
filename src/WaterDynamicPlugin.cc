@@ -49,7 +49,7 @@ void WaterDynamicPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
     this->flowSubscriber_ = this->node_->Subscribe(flowTopic,
       &WaterDynamicPlugin::UpdateFlowVelocity, this);
     }
-2
+
     // read sdf parameters
     double fluid_density = 1000.0;
     if (_sdf->HasElement("fluid_density"))
@@ -99,7 +99,9 @@ void WaterDynamicPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
             if (linkElem->HasAttribute("center_of_buoyancy"))
             {
                 cob = Str2Vector(linkElem->Get<std::string>("center_of_buoyancy"));
-                underwaterobject->SetCenterOfBuoyancy(ignition::math::Vector3d(cob[0], cob[1], cob[2]));
+                ignition::math::Vector3d cob_vec;
+                cob_vec.Set(cob[0], cob[1], cob[2]);
+                underwaterobject->SetCenterOfBuoyancy(cob_vec);
             }
 
             double g = std::abs(this->world_->Gravity().Z());
@@ -116,6 +118,7 @@ void WaterDynamicPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
             double coef_lift_xoz = 0.0;
             double coef_drag_xoy = 0.0;
             double coef_drag_xoz = 0.0;
+            std::vector<double> coef_lift_drag = {0, 0, 0, 0};
             if (linkElem->HasAttribute("coef_lift_drag"))
             {
                 coef_lift_drag = Str2Vector(linkElem->Get<std::string>("coef_lift_drag"));
@@ -125,6 +128,7 @@ void WaterDynamicPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
             double coef_added_mass_x = 0.0;
             double coef_added_mass_y = 0.0;
             double coef_added_mass_z = 0.0;
+            std::vector<double> coef_added_mass = {0, 0, 0};
             if (linkElem->HasAttribute("coef_added_mass"))
             {
                 coef_added_mass = Str2Vector(linkElem->Get<std::string>("coef_added_mass"));
@@ -143,7 +147,7 @@ void WaterDynamicPlugin::Connect()
 {
   // Connect the update event
   this->update_connection_ = event::Events::ConnectWorldUpdateBegin(
-        boost::bind(&UnderwaterObjectPlugin::Update,
+        boost::bind(&WaterDynamicPlugin::Update,
                     this, _1));
 }
 
@@ -152,8 +156,8 @@ void WaterDynamicPlugin::Update(const gazebo::common::UpdateInfo &_info)
     double time = _info.simTime.Double();
 
     for (std::map<gazebo::physics::LinkPtr,
-        HydrodynamicModelPtr>::iterator it = models.begin();
-        it != models.end(); ++it)
+        UnderWaterObject_Ptr>::iterator it = underWater_objects_.begin();
+        it != underWater_objects_.end(); ++it)
     {
         physics::LinkPtr link = it->first;
         UnderWaterObject_Ptr underwaterobject = it->second;
