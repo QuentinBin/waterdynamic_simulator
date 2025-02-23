@@ -3,7 +3,7 @@
  * @Author: Bin Peng
  * @Email: pb20020816@163.com
  * @Date: 2025-02-14 12:16:41
- * @LastEditTime: 2025-02-19 16:25:34
+ * @LastEditTime: 2025-02-23 16:41:51
  */
 #include <cmath>
 #include "waterdynamic_simulator/WaterDynamic.hh"
@@ -32,6 +32,10 @@ void UnderWaterObject_c::ApplyHydroDynamics(ignition::math::Vector3d &_flow_line
     this->ApplyBuoyancyForce();
     this->ApplyLiftDragForce(_flow_linear_vel);
     this->ApplyReactionForce();
+
+    std::cout << "total force: " << this->link_->RelativeForce() << std::endl;
+    std::cout << "total torque: " << this->link_->RelativeTorque() << std::endl;
+    std::cout << "acceleration: " << this->link_->RelativeLinearAccel() << std::endl;
 }
 
 
@@ -46,6 +50,7 @@ void UnderWaterObject_c::GetBuoyancyForce(
     ignition::math::Pose3d _pose = this->link_->WorldPose();
     ignition::math::Vector3d CoB_in_world_frame = _pose.Rot().RotateVector(this->center_of_buoyancy_);
     _buoyancy_force = this->fluid_density_ * this->g_ * this->volume_ * ignition::math::Vector3d(0, 0, 1);
+    // std::cout << "Buoyancy Force: " << _buoyancy_force << std::endl;
     _buoyancy_torque = CoB_in_world_frame.Cross(_buoyancy_force);
 }
 
@@ -70,8 +75,13 @@ void UnderWaterObject_c::GetLiftDragForce(
 {
     ignition::math::Vector3d flow_linear_vel = _flow_linear_vel;
     ignition::math::Vector3d _relative_vel_in_world_frame = this->link_->WorldLinearVel() - flow_linear_vel; //relative velocity to the flow
+    
+    // std::cout<< "Relative Velocity: " << _relative_vel_in_world_frame << std::endl;
+    
     ignition::math::Vector3d _relative_vel_in_body_frame = this->link_->WorldPose().Rot().RotateVectorReverse(_relative_vel_in_world_frame);
-    ignition::math::Vector3d _lift_dir_xoy, _lift_dir_xoz, _drag_dir_xoy, _drag_dir_xoz;
+    
+    
+    ignition::math::Vector3d _lift_dir_xoy, _lift_dir_xoz, _drag_dir_x, _drag_dir_y, _drag_dir_z;
     _lift_dir_xoy = ignition::math::Vector3d(0, 0, 1).Cross(_relative_vel_in_body_frame);
     _lift_dir_xoz = ignition::math::Vector3d(0, 1, 0).Cross(_relative_vel_in_body_frame);
     if (_lift_dir_xoy.X() * _relative_vel_in_body_frame.X() < 0)
@@ -93,13 +103,21 @@ void UnderWaterObject_c::GetLiftDragForce(
     double lift_xoz = 0.5 * this->fluid_density_ * this->coef_lift_xoz_ * fabs(uu + ww);
     _lift_force = lift_xoy * _lift_dir_xoy + lift_xoz * _lift_dir_xoz;
     
-    _drag_dir_xoy = -ignition::math::Vector3d(_relative_vel_in_body_frame.X(), _relative_vel_in_body_frame.Y(), 0);
-    _drag_dir_xoz = -ignition::math::Vector3d(_relative_vel_in_body_frame.X(), 0, _relative_vel_in_body_frame.Z());
-    _drag_dir_xoy = _drag_dir_xoy.Normalize();
-    _drag_dir_xoz = _drag_dir_xoz.Normalize();
-    double drag_xoy = 0.5 * this->fluid_density_ * this->coef_drag_xoy_ * fabs(uu + vv);
-    double drag_xoz = 0.5 * this->fluid_density_ * this->coef_drag_xoz_ * fabs(uu + ww);
-    _drag_force = drag_xoy * _drag_dir_xoy + drag_xoz * _drag_dir_xoz;
+    _drag_dir_x = -ignition::math::Vector3d(_relative_vel_in_body_frame.X(), 0, 0);
+    _drag_dir_y = -ignition::math::Vector3d(0, _relative_vel_in_body_frame.Y(), 0);
+    _drag_dir_z = -ignition::math::Vector3d(0, 0, _relative_vel_in_body_frame.Z());
+    _drag_dir_x = _drag_dir_x.Normalize();
+    _drag_dir_y = _drag_dir_y.Normalize();
+    _drag_dir_z = _drag_dir_z.Normalize();
+    double drag_x= 0.5 * this->fluid_density_ * this->coef_drag_x_ * fabs(uu);
+    double drag_y = 0.5 * this->fluid_density_ * this->coef_drag_y_ * fabs(vv);
+    double drag_z = 0.5 * this->fluid_density_ * this->coef_drag_z_ * fabs(ww);
+    _drag_force = drag_x * _drag_dir_x + drag_y * _drag_dir_y + drag_z * _drag_dir_z;
+
+    // std::cout << "Lift Force: " << _lift_force << std::endl;
+    // std::cout << "relative v:" << _relative_vel_in_body_frame << std::endl;
+    // std::cout << "Drag Force: " << _drag_force << std::endl;
+    // std::cout << "acc " << this->link_->RelativeLinearAccel() << std::endl;
 }   
 
 /// @brief Apply the lift and drag force on link
@@ -108,6 +126,7 @@ void UnderWaterObject_c::ApplyLiftDragForce(ignition::math::Vector3d &_flow_line
 {
     ignition::math::Vector3d lift_force;
     ignition::math::Vector3d drag_force;
+    // std::cout << "flow vel: " << _flow_linear_vel << std::endl;
     this->GetLiftDragForce(_flow_linear_vel, lift_force, drag_force);
     this->link_->AddRelativeForce(lift_force);
     this->link_->AddRelativeForce(drag_force);
@@ -119,6 +138,7 @@ void UnderWaterObject_c::GetReactionForce(
     ignition::math::Vector3d &_reaction_force)
 {
     ignition::math::Vector3d acceleration_rel_in_body_frame = this->link_->RelativeLinearAccel();
+    // std::cout << "Acceleration: " << acceleration_rel_in_body_frame << std::endl;
     double added_force_x = this->coef_added_mass_x * acceleration_rel_in_body_frame.X();
     double added_force_y = this->coef_added_mass_y * acceleration_rel_in_body_frame.Y();
     double added_force_z = this->coef_added_mass_z * acceleration_rel_in_body_frame.Z();
@@ -191,30 +211,35 @@ double UnderWaterObject_c::GetGravityCoef()
 void UnderWaterObject_c::SetLiftDragCoef(
     double _coef_lift_xoy,
     double _coef_lift_xoz,
-    double _coef_drag_xoy,
-    double _coef_drag_xoz)
+    double _coef_drag_x,
+    double _coef_drag_y,
+    double _coef_drag_z)
 {
     GZ_ASSERT(_coef_lift_xoy >= 0, "Lift Coef in xoy should be greater than or equal to 0");
     GZ_ASSERT(_coef_lift_xoz >= 0, "Lift Coef in xoz should be greater than or equal to 0");
-    GZ_ASSERT(_coef_drag_xoy >= 0, "Drag Coef in xoy should be greater than or equal to 0");
-    GZ_ASSERT(_coef_drag_xoz >= 0, "Drag Coef in xoz should be greater than or equal to 0");
+    GZ_ASSERT(_coef_drag_x >= 0, "Drag Coef in x should be greater than or equal to 0");
+    GZ_ASSERT(_coef_drag_y >= 0, "Drag Coef in y should be greater than or equal to 0");
+    GZ_ASSERT(_coef_drag_z >= 0, "Drag Coef in z should be greater than or equal to 0");
     this->coef_lift_xoy_ = _coef_lift_xoy;
     this->coef_lift_xoz_ = _coef_lift_xoz;
-    this->coef_drag_xoy_ = _coef_drag_xoy;
-    this->coef_drag_xoz_ = _coef_drag_xoz;
+    this->coef_drag_x_ = _coef_drag_x;
+    this->coef_drag_y_ = _coef_drag_y;
+    this->coef_drag_z_ = _coef_drag_z;
 }
 
 /////////////////////////////////////////////////
 void UnderWaterObject_c::GetLiftDragCoef(
     double &_coef_lift_xoy,
     double &_coef_lift_xoz,
-    double &_coef_drag_xoy,
-    double &_coef_drag_xoz)
+    double &_coef_drag_x,
+    double &_coef_drag_y,
+    double &_coef_drag_z)
 {
     _coef_lift_xoy = this->coef_lift_xoy_;
     _coef_lift_xoz = this->coef_lift_xoz_;
-    _coef_drag_xoy = this->coef_drag_xoy_;
-    _coef_drag_xoz = this->coef_drag_xoz_;
+    _coef_drag_x = this->coef_drag_x_;
+    _coef_drag_y = this->coef_drag_y_;
+    _coef_drag_z = this->coef_drag_z_;
 }
 
 
@@ -256,16 +281,6 @@ ignition::math::Vector3d UnderWaterObject_c::GetCenterOfBuoyancy()
     return this->center_of_buoyancy_;
 }
 
-// /////////////////////////////////////////////////
-// void UnderWaterObject_c::PrintParameters(std::string _paramName)
-// {
-//     if (!_paramName.compare("all"))
-//     {
-//         for (auto tag : this->params)
-//         this->Print(tag);
-//         return;
-//     }
-// }
 
 
 

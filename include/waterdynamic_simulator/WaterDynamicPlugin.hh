@@ -3,7 +3,7 @@
  * @Author: Bin Peng
  * @Email: pb20020816@163.com
  * @Date: 2025-02-19 06:15:38
- * @LastEditTime: 2025-02-19 16:36:14
+ * @LastEditTime: 2025-02-23 15:48:51
  */
 
 #ifndef WDSIM_WATERDYNAMIC_PLUGIN_HH_
@@ -34,7 +34,7 @@ class WaterDynamicPlugin : public gazebo::ModelPlugin
 
     protected: void UpdateFlowVelocity(ConstVector3dPtr &_msg);
     
-    protected: ignition::math::Vector3d flow_velocity_;
+    public: ignition::math::Vector3d flow_velocity_;
     protected: gazebo::transport::SubscriberPtr flowSubscriber_;
     protected: gazebo::event::ConnectionPtr update_connection_;
     protected: gazebo::physics::WorldPtr world_;

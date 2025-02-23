@@ -111,10 +111,10 @@ add_definitions(-std=c++17)
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES waterdynamic_simulator
-#  CATKIN_DEPENDS roscpp rospy
-#  DEPENDS system_lib
+ INCLUDE_DIRS include
+ LIBRARIES waterdynamic_simulator
+ CATKIN_DEPENDS roscpp rospy
+ DEPENDS system_lib
 )
 
 ###########

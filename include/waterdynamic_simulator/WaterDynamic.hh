@@ -3,7 +3,7 @@
  * @Author: Bin Peng
  * @Email: pb20020816@163.com
  * @Date: 2025-02-14 12:16:22
- * @LastEditTime: 2025-02-19 16:08:51
+ * @LastEditTime: 2025-02-23 15:42:53
  */
 #ifndef WDSIM_WATERDYNAMIC_HH_
 #define WDSIM_WATERDYNAMIC_HH
@@ -17,6 +17,8 @@
 
 namespace gazebo
 {
+
+
 
 class UnderWaterObject_c
 {
@@ -71,15 +73,17 @@ class UnderWaterObject_c
     public: void SetLiftDragCoef(
         double _coef_lift_xoy,
         double _coef_lift_xoz,
-        double _coef_drag_xoy,
-        double _coef_drag_xoz
+        double _coef_drag_x,
+        double _coef_drag_y,
+        double _coef_drag_z
     );
     // Get the Coefficients of Lift and Drag
     public: void GetLiftDragCoef(
         double &_coef_lift_xoy,
         double &_coef_lift_xoz,
-        double &_coef_drag_xoy,
-        double &_coef_drag_xoz
+        double &_coef_drag_x,
+        double &_coef_drag_y,
+        double &_coef_drag_z
     );
     // Set the Coefficients of Added Mass
     public: void SetAddedMassCoef(
@@ -101,8 +105,9 @@ class UnderWaterObject_c
     protected: double g_;
     protected: double coef_lift_xoy_;
     protected: double coef_lift_xoz_;
-    protected: double coef_drag_xoy_;
-    protected: double coef_drag_xoz_;
+    protected: double coef_drag_x_;
+    protected: double coef_drag_y_;
+    protected: double coef_drag_z_;
     protected: double coef_added_mass_x;
     protected: double coef_added_mass_y;
     protected: double coef_added_mass_z;
@@ -114,6 +119,18 @@ class UnderWaterObject_c
     // protected: Eigen::Matrix<double, 6, 1> acceleration_rel_;
 };
 
+
+// class UnderWaterObject_Factory
+// {
+//     public: UnderWaterObject_c* create(sdf::ElementPtr _sdf, physics::LinkPtr _link);
+//     public: static UnderWaterObject_Factory& GetInstance();
+//     public: bool RegisterCreator(const std::string& _identifier,
+//         UnderWaterObjectCreator _creator);
+//         private: UnderWaterObject_Factory() {}
+//     private: std::map<std::string, UnderWaterObjectCreator> creators_;
+// };
+
 }
+
 
 #endif
