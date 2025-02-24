@@ -3,7 +3,7 @@
  * @Author: Bin Peng
  * @Email: pb20020816@163.com
  * @Date: 2025-02-24 15:34:22
- * @LastEditTime: 2025-02-24 22:32:10
+ * @LastEditTime: 2025-02-24 22:42:07
  */
 #ifndef __WDSIM_FIN_PLUGIN_HH__
 #define __WDSIM_FIN_PLUGIN_HH__
@@ -30,7 +30,7 @@ class WaterDynamicFinPlugin : public gazebo::ModelPlugin
     public: virtual void Reset();
     
 
-    protected: void UpdateInput(const double (&_msg)[3]);
+    protected: void UpdateInput(ConstVector3dPtr &_msg);
     protected: void UpdateFlowVelocity(ConstVector3dPtr &_msg);
     
     public: ignition::math::Vector3d flow_velocity_;

@@ -179,11 +179,11 @@ void WaterDynamicFinPlugin::UpdateFlowVelocity(ConstVector3dPtr &_msg)
     this->flow_velocity_ = ignition::math::Vector3d(_msg->x(), _msg->y(), _msg->z());
 }
 
-void WaterDynamicFinPlugin::UpdateInput(const double (&_msg)[3])
+void WaterDynamicFinPlugin::UpdateInput(ConstVector3dPtr &_msg)
 {
-    this->angle = _msg[0];
-    this->velocity_by_rotation = _msg[1];
-    this->acceleration_by_rotation = _msg[2];
+    this->angle = _msg->x();
+    this->velocity_by_rotation = _msg->y(),
+    this->acceleration_by_rotation = _msg->z();
 }
 
 } // namespace gazebo

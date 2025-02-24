@@ -15,7 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 find_package(Eigen3 REQUIRED)
-
+set(ROBODACT_GAZEBO_PLUGINS_LIST "")
 # sdfformat9 uses C++17 features. 
 
 add_definitions(-std=c++17)
@@ -112,7 +112,9 @@ add_definitions(-std=c++17)
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
  INCLUDE_DIRS include
- LIBRARIES waterdynamic_simulator
+ LIBRARIES 
+  underwater_object_plugin
+  fin_plugin
  CATKIN_DEPENDS roscpp rospy
  DEPENDS system_lib
 )
@@ -137,11 +139,17 @@ link_directories(
 )
 
 ## Declare a C++ library
-add_library(${PROJECT_NAME}
+add_library(underwater_object_plugin
   src/WaterDynamic.cc
   src/WaterDynamicPlugin.cc
+)
+list(APPEND ROBODACT_GAZEBO_PLUGINS_LIST underwater_object_plugin)
+
+add_library(fin_plugin
+  src/WaterDynamic.cc
   src/FinPlugin.cc
 )
+list(APPEND ROBODACT_GAZEBO_PLUGINS_LIST fin_plugin)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -190,7 +198,7 @@ add_library(${PROJECT_NAME}
 
 ## Mark libraries for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_libraries.html
-install(TARGETS ${PROJECT_NAME}
+install(TARGETS ${ROBODACT_GAZEBO_PLUGINS_LIST}
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
