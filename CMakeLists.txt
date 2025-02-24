@@ -140,6 +140,7 @@ link_directories(
 add_library(${PROJECT_NAME}
   src/WaterDynamic.cc
   src/WaterDynamicPlugin.cc
+  src/FinPlugin.cc
 )
 
 ## Add cmake target dependencies of the library

@@ -3,7 +3,7 @@
  * @Author: Bin Peng
  * @Email: pb20020816@163.com
  * @Date: 2025-02-14 12:16:22
- * @LastEditTime: 2025-02-23 15:42:53
+ * @LastEditTime: 2025-02-24 22:33:22
  */
 #ifndef WDSIM_WATERDYNAMIC_HH_
 #define WDSIM_WATERDYNAMIC_HH
@@ -27,7 +27,7 @@ class UnderWaterObject_c
 
     
     ///////////Hydrodynamic Functions////////////
-    public: void ApplyHydroDynamics(ignition::math::Vector3d &_flow_linear_vel);
+    public: void ApplyHydroDynamics(ignition::math::Vector3d &_flow_linear_vel, ignition::math::Vector3d &_velocity_in_body_frame, ignition::math::Vector3d &_acceleration_in_body_frame);
     // Get the buoyancy force in World Frame
     public: void GetBuoyancyForce(
         ignition::math::Vector3d &_boyancy_force,
@@ -39,14 +39,15 @@ class UnderWaterObject_c
     public: void GetLiftDragForce(
         const ignition::math::Vector3d &_flow_linear_vel,
         ignition::math::Vector3d &_lift_force,
-        ignition::math::Vector3d &_drag_force
+        ignition::math::Vector3d &_drag_force,
+        ignition::math::Vector3d &_velocity_in_body_frame 
     );
     // Apply the lift and drag force on link
-    public: void ApplyLiftDragForce(ignition::math::Vector3d &_flow_linear_vel);
+    public: void ApplyLiftDragForce(ignition::math::Vector3d &_flow_linear_vel, ignition::math::Vector3d &_velocity_in_body_frame);
     // Get the reaction force in Body Frame
-    public: void GetReactionForce(ignition::math::Vector3d &_reaction_force);
+    public: void GetReactionForce(ignition::math::Vector3d &_reaction_force, ignition::math::Vector3d &_acceleration_in_body_frame);
     // Apply the reaction force on link
-    public: void ApplyReactionForce();
+    public: void ApplyReactionForce(ignition::math::Vector3d &_acceleration_in_body_frame);
     ////////////Hydrodynamic Functions////////////
     
 
@@ -112,7 +113,7 @@ class UnderWaterObject_c
     protected: double coef_added_mass_y;
     protected: double coef_added_mass_z;
     protected: ignition::math::Vector3d center_of_buoyancy_;
-    protected: physics::LinkPtr link_;
+    public: physics::LinkPtr link_;
     // protected: double last_time_;
     // protected: Eigen::Matrix<double, 6, 1> velocity_;
     // protected: Eigen::Matrix<double, 6, 1> last_velocity_rel_;

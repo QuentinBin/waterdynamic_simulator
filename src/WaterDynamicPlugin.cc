@@ -176,9 +176,10 @@ void WaterDynamicPlugin::Update(const gazebo::common::UpdateInfo &_info)
         angularAccel = link->RelativeAngularAccel().Length();
         GZ_ASSERT(!std::isnan(linearAccel) && !std::isnan(angularAccel),
             "Linear or angular accelerations are invalid.");
-        underwaterobject->ApplyHydroDynamics(this->flow_velocity_);
+        ignition::math::Vector3d velocity_in_body_frame = link->RelativeLinearVel();
+        ignition::math::Vector3d acceleration_in_body_frame = link->RelativeLinearAccel();
+        underwaterobject->ApplyHydroDynamics(this->flow_velocity_, velocity_in_body_frame, acceleration_in_body_frame);
 
-        
 
 
         // ignition::math::Vector3d buoyant_force, buoyant_torque;
