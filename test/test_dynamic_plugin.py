@@ -21,11 +21,11 @@ class test_fin_plugin():
             ros_msg_1 = Vector3()
             ros_msg_2 = Vector3()
             amp = 30 / 180 * 3.14
-            ros_msg_1.x = amp * math.sin(self._count/5.0) # angle
+            ros_msg_1.x = 0 # angle
             ros_msg_1.y = 0.1* amp * 4*3.14*math.cos(self._count/5.0) #velocity
             ros_msg_1.z = -0.1* amp * 4*3.14* 4*3.14*math.sin(self._count/5.0) #acceleration
 
-            ros_msg_2.x = amp * math.sin(self._count/5.0 - 30/180*3.14)
+            ros_msg_2.x = 0
             ros_msg_2.y = 0.2* amp * 4*3.14*math.cos(self._count/5.0) +  0.1* amp * 4*3.14* math.cos(self._count/5.0 - 30/180*3.14)#velocity
             ros_msg_2.z = -0.2* amp * 4*3.14* 4*3.14*math.sin(self._count/5.0) - 0.1* amp * 4*3.14* 4*3.14* math.sin(self._count/5.0 - 30/180*3.14)#acceleration
             self.fin_input_pub_1.publish(ros_msg_1)

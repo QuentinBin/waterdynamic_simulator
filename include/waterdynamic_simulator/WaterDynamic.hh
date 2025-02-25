@@ -3,7 +3,7 @@
  * @Author: Bin Peng
  * @Email: pb20020816@163.com
  * @Date: 2025-02-14 12:16:22
- * @LastEditTime: 2025-02-24 22:33:22
+ * @LastEditTime: 2025-02-25 16:22:46
  */
 #ifndef WDSIM_WATERDYNAMIC_HH_
 #define WDSIM_WATERDYNAMIC_HH
@@ -114,22 +114,10 @@ class UnderWaterObject_c
     protected: double coef_added_mass_z;
     protected: ignition::math::Vector3d center_of_buoyancy_;
     public: physics::LinkPtr link_;
-    // protected: double last_time_;
-    // protected: Eigen::Matrix<double, 6, 1> velocity_;
-    // protected: Eigen::Matrix<double, 6, 1> last_velocity_rel_;
-    // protected: Eigen::Matrix<double, 6, 1> acceleration_rel_;
+    public: physics::LinkPtr base_link_;
+    
 };
 
-
-// class UnderWaterObject_Factory
-// {
-//     public: UnderWaterObject_c* create(sdf::ElementPtr _sdf, physics::LinkPtr _link);
-//     public: static UnderWaterObject_Factory& GetInstance();
-//     public: bool RegisterCreator(const std::string& _identifier,
-//         UnderWaterObjectCreator _creator);
-//         private: UnderWaterObject_Factory() {}
-//     private: std::map<std::string, UnderWaterObjectCreator> creators_;
-// };
 
 }
 

@@ -218,8 +218,9 @@ void WaterDynamicFinPlugin::OnUpdate(const gazebo::common::UpdateInfo &_info)
 
         this->underWater_objects_->ApplyHydroDynamics(this->flow_velocity_, velocity_in_body_frame, acceleration_in_body_frame);
         
-        this->joint_->SetPosition(0, this->angle); //Do last since this will set the joint velocity to 0
+        // this->joint_->SetPosition(0, this->angle); //Do last since this will set the joint velocity to 0
         // std::cout << "angle: " << this->angle << std::endl;
+        // this->joint_->SetVelocity(0, this->velocity_by_rotation);
         this->angleStamp = _info.simTime;
 
     }
