@@ -20,12 +20,19 @@ WaterDynamicFinPlugin::WaterDynamicFinPlugin()
     this->velocity_by_rotation = 0.0;
     this->acceleration_by_rotation = 0.0;
     this->angleStamp = gazebo::common::Time(0.0);
+
+    this->ros_publish_period_ = gazebo::common::Time(0.05); // 20Hz
+    this->last_ros_publish_time_ = gazebo::common::Time(0.0);
+
+    this->received_input_ = false;
 }
 
 /////////////////////////////////////////////
 WaterDynamicFinPlugin::~WaterDynamicFinPlugin()
 {
     this->update_connection_.reset();
+    this->ros_update_connection_.reset();
+    this->rosNode_->shutdown();
 }
 
 /////////////////////////////////////////////
@@ -38,34 +45,7 @@ void WaterDynamicFinPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
     this->world_ = this->model_->GetWorld();
     std::string world_name = this->world_->Name();
 
-    // Initialize the transport node
-    this->node_ = transport::NodePtr(new transport::Node());
-    this->node_->Init(world_name);
     
-    // If fluid topic is available, subscribe to it
-    if (_sdf->HasElement("flow_velocity_topic"))
-    {
-    std::string flowTopic = _sdf->Get<std::string>("flow_velocity_topic");
-    GZ_ASSERT(!flowTopic.empty(),
-              "Fluid velocity topic tag cannot be empty");
-
-    gzmsg << "Subscribing to current velocity topic: " << flowTopic
-        << std::endl;
-    this->flowSubscriber_ = this->node_->Subscribe(flowTopic,
-      &WaterDynamicFinPlugin::UpdateFlowVelocity, this);
-    }
-
-    if (_sdf->HasElement("input_topic"))
-    {
-        std::string inputTopic = _sdf->Get<std::string>("input_topic");
-        GZ_ASSERT(!inputTopic.empty(),
-                  "Input topic tag cannot be empty");
-
-        gzmsg << "Subscribing to input topic: " << inputTopic
-              << std::endl;
-        this->inputSubscriber_ = this->node_->Subscribe(inputTopic,
-          &WaterDynamicFinPlugin::UpdateInput, this);
-    }
 
     // read sdf parameters
     double fluid_density = 1000.0;
@@ -75,11 +55,28 @@ void WaterDynamicFinPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
         std::cout << "fluid density: " << _sdf->Get<double>("fluid_density") << std::endl;
     }
 
+    if (_sdf->HasElement("joint"))
+    {
+        sdf::ElementPtr jointElem = _sdf->GetElement("joint");
+        std::string jointName = "";
+        if (jointElem->HasAttribute("name"))
+        {
+            jointName = jointElem->Get<std::string>("name");
+            this->joint_ = this->model_->GetJoint(jointName);
+        }
+        else
+        {
+            gzwarn << "Attribute name missing from joint [" << jointName
+                   << "]" << std::endl;
+        }
+    }
+
+    std::string linkName = "";
     if (_sdf->HasElement("link"))
     {
         sdf::ElementPtr linkElem = _sdf->GetElement("link");
         physics::LinkPtr link;
-        std::string linkName = "";
+        
         if (linkElem->HasAttribute("name"))
         {   
             std::cout << "link name: " << linkElem->Get<std::string>("name") << std::endl;
@@ -137,10 +134,51 @@ void WaterDynamicFinPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
             this->underWater_objects_->SetAddedMassCoef(coef_added_mass[0], coef_added_mass[1], coef_added_mass[2]);
         }
         
+    }
 
+    // Initialize the transport node
+    this->node_ = transport::NodePtr(new transport::Node());
+    this->node_->Init(world_name);
+    // If fluid topic is available, subscribe to it
+    if (_sdf->HasElement("flow_velocity_topic"))
+    {
+    std::string flowTopic = _sdf->Get<std::string>("flow_velocity_topic");
+    GZ_ASSERT(!flowTopic.empty(),
+            "Fluid velocity topic tag cannot be empty");
+
+    gzmsg << "Subscribing to current velocity topic: " << flowTopic
+        << std::endl;
+    this->flowSubscriber_ = this->node_->Subscribe(flowTopic,
+    &WaterDynamicFinPlugin::UpdateFlowVelocity, this);
+    }
+
+    if (_sdf->HasElement("input_topic"))
+    {   
+        std::cout << "input topic" << std::endl;
+        std::string inputTopic = _sdf->Get<std::string>("input_topic");
+        GZ_ASSERT(!inputTopic.empty(),
+                "Input topic tag cannot be empty");
+
+        std::cout << "Subscribing to input topic: " << inputTopic
+            << std::endl;
+        this->inputSubscriber_ = this->node_->Subscribe(
+            inputTopic, &WaterDynamicFinPlugin::UpdateInput, this);
     }
 
     this->Connect();
+
+    /////////////////////////////////////////////////
+    // Initialize ROS
+    if (!ros::isInitialized())
+    {
+        gzerr << "Not loading plugin since ROS has not been "
+            << "properly initialized.  Try starting gazebo with ros plugin:\n"
+            << "  gazebo -s libgazebo_ros_api_plugin.so\n";
+        return;
+    }
+    this->rosNode_.reset(new ros::NodeHandle(""));
+    this->ros_inputSubscriber_ = this->rosNode_->subscribe<geometry_msgs::Vector3>(
+        this->inputSubscriber_->GetTopic(), 10, &WaterDynamicFinPlugin::RosUpdateInput, this);
 }
 
 
@@ -148,29 +186,72 @@ void WaterDynamicFinPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
 void WaterDynamicFinPlugin::Connect()
 {
     this->update_connection_ = event::Events::ConnectWorldUpdateBegin(
-        boost::bind(&WaterDynamicFinPlugin::Update, this, _1));
+        boost::bind(&WaterDynamicFinPlugin::OnUpdate, this, _1));
 }
 
-void WaterDynamicFinPlugin::Update(const gazebo::common::UpdateInfo &_info)
+void WaterDynamicFinPlugin::OnUpdate(const gazebo::common::UpdateInfo &_info)
 {
-    GZ_ASSERT(!std::isnan(this->angle), "Angle is NaN");
+    static double last_angle = 0.0;
+    static double last_velocity = 0.0;
+    static double last_acceleration = 0.0;
 
-    double upper_limit = 0.0, lower_limit = 0.0;
-    upper_limit = this->joint_->UpperLimit(0);
-    lower_limit = this->joint_->LowerLimit(0);
-    this->angle = std::max(lower_limit, std::min(upper_limit, this->angle));
+    if(!this->received_input_)
+    {
+        this->angle = last_angle;
+        this->velocity_by_rotation = last_velocity;
+        this->acceleration_by_rotation = last_acceleration;
 
-    ignition::math::Vector3d velocity_by_rotation = ignition::math::Vector3d(this->velocity_by_rotation, 0, 0);
-    ignition::math::Vector3d acceleration_by_rotation = ignition::math::Vector3d(this->acceleration_by_rotation, 0, 0);
+        // std::cout << "angle: " << this->angle << std::endl;
 
-    ignition::math::Vector3d velocity_in_body_frame = this->underWater_objects_->link_->RelativeLinearVel() + velocity_by_rotation;
-    ignition::math::Vector3d acceleration_in_body_frame = this->underWater_objects_->link_->RelativeLinearAccel() + acceleration_by_rotation;
+        GZ_ASSERT(!std::isnan(this->angle), "Angle is NaN");
 
-    this->underWater_objects_->ApplyHydroDynamics(this->flow_velocity_, velocity_in_body_frame, acceleration_in_body_frame);
+        double upper_limit = 0.0, lower_limit = 0.0;
+        upper_limit = this->joint_->UpperLimit(0);
+        lower_limit = this->joint_->LowerLimit(0);
+        this->angle = std::max(lower_limit, std::min(upper_limit, this->angle));
+
+        ignition::math::Vector3d velocity_by_rotation = ignition::math::Vector3d(0, -this->velocity_by_rotation, 0);
+        ignition::math::Vector3d acceleration_by_rotation = ignition::math::Vector3d(0, -this->acceleration_by_rotation, 0);
+
+        ignition::math::Vector3d velocity_in_body_frame =  velocity_by_rotation;
+        ignition::math::Vector3d acceleration_in_body_frame = acceleration_by_rotation;
+
+        this->underWater_objects_->ApplyHydroDynamics(this->flow_velocity_, velocity_in_body_frame, acceleration_in_body_frame);
+        
+        this->joint_->SetPosition(0, this->angle); //Do last since this will set the joint velocity to 0
+        // std::cout << "angle: " << this->angle << std::endl;
+        this->angleStamp = _info.simTime;
+
+    }
+    else
+    {
+        last_angle = this->angle;
+        last_velocity = this->velocity_by_rotation;
+        last_acceleration = this->acceleration_by_rotation;
+        this->received_input_ = false;
+        std::cout << "angle: " << this->angle << std::endl;
+
+        GZ_ASSERT(!std::isnan(this->angle), "Angle is NaN");
+
+        double upper_limit = 0.0, lower_limit = 0.0;
+        upper_limit = this->joint_->UpperLimit(0);
+        lower_limit = this->joint_->LowerLimit(0);
+        this->angle = std::max(lower_limit, std::min(upper_limit, this->angle));
+
+        ignition::math::Vector3d velocity_by_rotation = ignition::math::Vector3d(0, -this->velocity_by_rotation, 0);
+        ignition::math::Vector3d acceleration_by_rotation = ignition::math::Vector3d(0, -this->acceleration_by_rotation, 0);
+
+        ignition::math::Vector3d velocity_in_body_frame = this->underWater_objects_->link_->RelativeLinearVel() + velocity_by_rotation;
+        ignition::math::Vector3d acceleration_in_body_frame = this->underWater_objects_->link_->RelativeLinearAccel() + acceleration_by_rotation;
+
+        this->underWater_objects_->ApplyHydroDynamics(this->flow_velocity_, velocity_in_body_frame, acceleration_in_body_frame);
+        
+        this->joint_->SetPosition(0, this->angle); //Do last since this will set the joint velocity to 0
+        // std::cout << "angle: " << this->angle << std::endl;
+        this->angleStamp = _info.simTime;
+    }
+
     
-    this->joint_->SetPosition(0, this->angle); //Do last since this will set the joint velocity to 0
-
-    this->angleStamp = _info.simTime;
 }
 
 
@@ -181,9 +262,31 @@ void WaterDynamicFinPlugin::UpdateFlowVelocity(ConstVector3dPtr &_msg)
 
 void WaterDynamicFinPlugin::UpdateInput(ConstVector3dPtr &_msg)
 {
+    // std::cout << "Updating Input " << std::endl;
     this->angle = _msg->x();
     this->velocity_by_rotation = _msg->y(),
     this->acceleration_by_rotation = _msg->z();
+    
 }
+
+void WaterDynamicFinPlugin::RosUpdateInput(const geometry_msgs::Vector3::ConstPtr& msg)
+{
+    // std::cout << "Updating Input " << std::endl;
+    this->angle = msg->x;
+    this->velocity_by_rotation = msg->y;
+    this->acceleration_by_rotation = msg->z;
+    this->received_input_ = true;
+    // std::cout << "angle: " << this->angle << std::endl;
+    // std::cout << "velocity by rotation: " << this->velocity_by_rotation << std::endl;
+    // std::cout << "acceleration by rotation: " << this->acceleration_by_rotation << std::endl;
+}
+
+void WaterDynamicFinPlugin::Init(){}
+
+void WaterDynamicFinPlugin::Reset()
+{
+  this->last_ros_publish_time_.Set(0, 0);
+}
+
 
 } // namespace gazebo

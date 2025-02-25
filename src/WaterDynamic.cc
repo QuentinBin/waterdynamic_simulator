@@ -3,7 +3,7 @@
  * @Author: Bin Peng
  * @Email: pb20020816@163.com
  * @Date: 2025-02-14 12:16:41
- * @LastEditTime: 2025-02-24 16:15:40
+ * @LastEditTime: 2025-02-25 14:58:47
  */
 #include <cmath>
 #include "waterdynamic_simulator/WaterDynamic.hh"
@@ -139,6 +139,7 @@ void UnderWaterObject_c::GetReactionForce(
     double added_force_y = this->coef_added_mass_y * acceleration_rel_in_body_frame.Y();
     double added_force_z = this->coef_added_mass_z * acceleration_rel_in_body_frame.Z();
     _reaction_force = - ignition::math::Vector3d(added_force_x, added_force_y, added_force_z);
+    // std::cout << "Reaction Force in World Frame: " << this->link_->WorldPose().Rot().RotateVector(_reaction_force) << std::endl;  
 }
 
 /// @brief Apply the reaction force on link
@@ -147,6 +148,8 @@ void UnderWaterObject_c::ApplyReactionForce(ignition::math::Vector3d &_accelerat
     ignition::math::Vector3d reaction_force;
     this->GetReactionForce(reaction_force, _acceleration_in_body_frame);
     this->link_->AddRelativeForce(reaction_force);
+    // std::cout<< "Reaction Force: " << reaction_force << std::endl;
+    std::cout << "Reaction Force in World Frame: " << this->link_->WorldPose().Rot().RotateVector(reaction_force) << std::endl;
 }
 
 // /////////////////////////////////////////////////
